@@ -169,6 +169,41 @@ void USART2_PutBuffer(uint8_t *buffer, uint8_t length)
 void USART2_CheckDmaReception(void)
 {
 	//type your implementation here
+
+
+	static uint16_t processed = 0;
+
+	uint16_t received = DMA_USART2_BUFFER_SIZE -
+	                    LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_6);
+
+	// Spracovanie novych prijatych znakov
+	for (uint16_t i = processed; i < received; i++)
+	{
+	    if (USART2_ProcessData != 0)
+	    {
+	        USART2_ProcessData(bufferUSART2dma[i]);
+	    }
+	}
+
+	processed = received;
+
+	// Reset DMA pred zaplnenim buffera
+	if (received >= DMA_USART2_BUFFER_SIZE - 20)
+	{
+	    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_6);
+
+	    LL_DMA_SetMemoryAddress(DMA1, LL_DMA_CHANNEL_6,
+	                            (uint32_t)bufferUSART2dma);
+	    LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_6,
+	                         DMA_USART2_BUFFER_SIZE);
+
+	    LL_DMA_ClearFlag_HT6(DMA1);
+	    LL_DMA_ClearFlag_TC6(DMA1);
+
+	    processed = 0;
+	    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_6);
+	}
+
 }
 
 

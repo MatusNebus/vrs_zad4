@@ -40,6 +40,12 @@ void proccesDmaData(uint8_t sign);
 
 	// type your global variables here:
 
+char receivedText[36];
+uint8_t textLength = 0;
+uint8_t receiving = 0;
+volatile uint8_t validTextReady = 0;
+letter_count_ letterCount = {0, 0};
+
 
 int main(void)
 {
@@ -60,6 +66,7 @@ int main(void)
   /* Space for your local variables, callback registration ...*/
 
   	  //type your code here:
+  USART2_RegisterCallback(proccesDmaData);
 
   while (1)
   {
@@ -120,6 +127,47 @@ void proccesDmaData(uint8_t sign)
 	/* Process received data */
 
 		// type your algorithm here:
+
+	if (sign == '#')
+	{
+	    receiving = 1;
+	    textLength = 0;
+	    return;
+	}
+
+	if (!receiving)
+	    return;
+
+	if (sign == '$')
+	{
+	    receivedText[textLength] = '\0';
+
+	    letterCount.small_letter = 0;
+	    letterCount.capital_letter = 0;
+
+	    for (uint8_t i = 0; i < textLength; i++)
+	    {
+	        if (receivedText[i] >= 'a' && receivedText[i] <= 'z')
+	            letterCount.small_letter++;
+	        else if (receivedText[i] >= 'A' && receivedText[i] <= 'Z')
+	            letterCount.capital_letter++;
+	    }
+
+	    validTextReady = 1;
+	    receiving = 0;
+	    return;
+	}
+
+	if (textLength < 35)
+	{
+	    receivedText[textLength++] = sign;
+	}
+	else
+	{
+	    receiving = 0;
+	    textLength = 0;
+	}
+
 }
 
 
