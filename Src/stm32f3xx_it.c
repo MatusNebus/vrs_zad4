@@ -22,6 +22,8 @@
 #include "main.h"
 #include "usart.h"
 #include "stm32f3xx_it.h"
+extern volatile uint32_t msTicks;
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -183,7 +185,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+	msTicks++;
   /* USER CODE END SysTick_IRQn 0 */
   
   /* USER CODE BEGIN SysTick_IRQn 1 */

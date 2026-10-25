@@ -23,6 +23,7 @@
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
+#include <stdio.h>
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -45,6 +46,7 @@ uint8_t textLength = 0;
 uint8_t receiving = 0;
 volatile uint8_t validTextReady = 0;
 letter_count_ letterCount = {0, 0};
+volatile uint32_t msTicks = 0;
 
 
 int main(void)
@@ -67,6 +69,8 @@ int main(void)
 
   	  //type your code here:
   USART2_RegisterCallback(proccesDmaData);
+  static char txBuffer[160];
+  uint32_t lastReport = 0;
 
   while (1)
   {
@@ -83,6 +87,38 @@ int main(void)
 	   */
 
   	  	  	  //type your code here:
+
+	  if (!LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_7))
+	  {
+	      if (validTextReady)
+	      {
+	          int len = snprintf(txBuffer, sizeof(txBuffer),
+	                  "Valid string: %s, lower-case: %d, upper-case: %d\r\n",
+	                  receivedText, letterCount.small_letter,
+	                  letterCount.capital_letter);
+
+	          validTextReady = 0;
+	          USART2_PutBuffer((uint8_t *)txBuffer, len);
+	      }
+	      else if (msTicks - lastReport >= 2000)
+	      {
+	          lastReport = msTicks;
+
+	          uint16_t occupied = DMA_USART2_BUFFER_SIZE -
+	                  LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_6);
+
+	          uint32_t load10 = occupied * 1000 / DMA_USART2_BUFFER_SIZE;
+
+	          int len = snprintf(txBuffer, sizeof(txBuffer),
+	                  "Buffer capacity: %d bytes, occupied memory: %d bytes, load [in %%]: %lu.%lu%%\r\n",
+	                  DMA_USART2_BUFFER_SIZE, occupied,
+	                  (unsigned long)(load10 / 10),
+	                  (unsigned long)(load10 % 10));
+
+	          USART2_PutBuffer((uint8_t *)txBuffer, len);
+	      }
+	  }
+
   }
   /* USER CODE END 3 */
 }
@@ -127,6 +163,8 @@ void proccesDmaData(uint8_t sign)
 	/* Process received data */
 
 		// type your algorithm here:
+	if (validTextReady)
+	    return;
 
 	if (sign == '#')
 	{
@@ -161,7 +199,14 @@ void proccesDmaData(uint8_t sign)
 	if (textLength < 35)
 	{
 	    receivedText[textLength++] = sign;
+
+	    if (textLength == 35)
+	    {
+	        receiving = 0;
+	        textLength = 0;
+	    }
 	}
+
 	else
 	{
 	    receiving = 0;
