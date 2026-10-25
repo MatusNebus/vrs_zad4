@@ -100,7 +100,7 @@ int main(void)
 	          validTextReady = 0;
 	          USART2_PutBuffer((uint8_t *)txBuffer, len);
 	      }
-	      else if (msTicks - lastReport >= 2000)
+	      else if (msTicks - lastReport >= 10000)
 	      {
 	          lastReport = msTicks;
 
@@ -153,6 +153,7 @@ void SystemClock_Config(void)
   LL_Init1msTick(8000000);
   LL_SYSTICK_SetClkSource(LL_SYSTICK_CLKSOURCE_HCLK);
   LL_SetSystemCoreClock(8000000);
+  LL_SYSTICK_EnableIT();
 }
 
 /*
